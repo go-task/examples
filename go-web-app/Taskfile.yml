@@ -1,0 +1,84 @@
+version: '2'
+
+vars:
+  EXE: app{{exeExt}}
+
+  JS_FILES:
+    assets/js/vendor/jquery.js
+    assets/js/main.js
+
+  CSS_FILES:
+    assets/css/vendor/reboot.css
+    assets/css/main.css
+
+tasks:
+  default:
+    cmds:
+      - task: run
+
+  run:
+    desc: Build and run the web app
+    cmds:
+      - task: build
+      - ./{{.EXE}}
+
+  build:
+    desc: Build the web app
+    deps: [assets, templates]
+    cmds:
+      - go build -v -o {{.EXE}} ./app.go
+
+  assets:
+    desc: Bundle assets and generate box for it
+    deps: [js, css]
+    cmds:
+      - fileb0x assets_box.yml
+    sources:
+      - public/**/*
+    generates:
+      - boxes/assets/ab0x.go
+      - assets_box.yml
+    method: checksum
+
+  js:
+    desc: Bundle JS
+    cmds:
+      - minify -o public/app.js {{.JS_FILES}}
+    sources:
+      - assets/js/**/*.js
+    generates:
+      - public/app.js
+    method: checksum
+
+  css:
+    desc: Bundle CSS
+    cmds:
+      - minify -o public/app.css {{.CSS_FILES}}
+    sources:
+      - assets/css/**/*.css
+    generates:
+      - public/app.css
+    method: checksum
+
+  templates:
+    desc: Generate box for HTML templates
+    cmds:
+      - fileb0x templates_box.yml
+    sources:
+      - templates/**/*
+      - templates_box.yml
+    generates:
+      - boxes/templates/ab0x.go
+    method: checksum
+
+  dl-deps:
+    desc: Install tools required to build this app
+    cmds:
+      - task: go-get
+        vars: {REPO: github.com/tdewolff/minify/cmd/minify}
+      - task: go-get
+        vars: {REPO: github.com/UnnoTed/fileb0x}
+
+  go-get:
+    cmds:
+      - go get -u {{.REPO}}

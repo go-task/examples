@@ -1,0 +1,15 @@
+# https://github.com/UnnoTed/fileb0x
+
+pkg: assets
+dest: "./boxes/assets/"
+fmt: true
+
+compression:
+  compress: true
+  method: "BestCompression"
+
+output: "ab0x.go"
+
+custom:
+  - files:
+      - "public/*"
