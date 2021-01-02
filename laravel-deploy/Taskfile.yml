@@ -1,0 +1,41 @@
+#
+# This task file allows you to:
+#  1. "task serve"  - Serve the Laravel application locally for development.
+#  2. "task deploy" - Deploy to live server.
+#
+# Task file usage: https://taskfile.dev
+#
+
+version: "2"
+
+vars:
+  DATETIME: $(date +%Y%m%d_%H%M%S)
+  GREETING: Welcome!
+  SSH_KEY: "/c/Users/YOURUSER/.ssh/YOURPRIVATESSHKEY"
+  LIVE_SERVER: USER@YOURLIVESERVER.COM
+  LIVE_PATH: /WEB_DIRETORY/APPPATH
+  DEV_SERVER: DEV.YOURDEVSERVER.COM
+  DEV_HOST: 80
+
+output: prefixed
+
+tasks:
+  default:
+    cmds:
+      - echo "{{.GREETING}}. Time is {{.DATETIME}}"
+    silent: true
+
+  composer:
+    cmds:
+      - export COMPOSER_MEMORY_LIMIT=-1; composer update
+
+  deploy:
+    desc: Deploy to live server
+    cmds:
+      - ssh -i {{.SSH_KEY}} {{.LIVE_SERVER}} "cd {{.LIVE_PATH}}; git pull;"
+      - ssh -i {{.SSH_KEY}} {{.LIVE_SERVER}} "cd {{.LIVE_PATH}}; composer update;"
+      - ssh -i {{.SSH_KEY}} {{.LIVE_SERVER}} "cd {{.LIVE_PATH}}; php laravel-fix.php;"
+      
+  serve:
+    cmds:
+      - php artisan serve --host={{.DEV_SERVER}} --port={{.DEV_HOST}}
