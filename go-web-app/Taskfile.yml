@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 vars:
   EXE: app{{exeExt}}
@@ -38,7 +38,6 @@ tasks:
     generates:
       - boxes/assets/ab0x.go
       - assets_box.yml
-    method: checksum
 
   js:
     desc: Bundle JS
@@ -48,7 +47,6 @@ tasks:
       - assets/js/**/*.js
     generates:
       - public/app.js
-    method: checksum
 
   css:
     desc: Bundle CSS
@@ -58,7 +56,6 @@ tasks:
       - assets/css/**/*.css
     generates:
       - public/app.css
-    method: checksum
 
   templates:
     desc: Generate box for HTML templates
@@ -69,7 +66,6 @@ tasks:
       - templates_box.yml
     generates:
       - boxes/templates/ab0x.go
-    method: checksum
 
   dl-deps:
     desc: Install tools required to build this app
