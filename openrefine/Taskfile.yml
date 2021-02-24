@@ -1,0 +1,116 @@
+version: '3'
+
+silent: true
+output: prefixed
+
+tasks:
+  default:
+    desc: run both examples in parallel and check OpenRefine log
+    deps:
+      - task: example-doaj
+      - task: example-powerhouse
+    cmds:
+      - task: check
+
+  install:
+    desc: install OpenRefine and openrefine-client into subdirectory openrefine
+    dir: openrefine
+    cmds:
+      - | # download OpenRefine and extract files
+        wget --no-verbose https://github.com/OpenRefine/OpenRefine/releases/download/3.4.1/openrefine-linux-3.4.1.tar.gz
+        tar -xzf openrefine-linux-3.4.1.tar.gz --strip 1
+        rm openrefine-linux-3.4.1.tar.gz
+      - sed -i '$ a JAVA_OPTIONS=-Drefine.headless=true' refine.ini # do not try to open OpenRefine in browser
+      - | # download openrefine-client and make it executable
+        wget --no-verbose --no-clobber -O client https://github.com/opencultureconsulting/openrefine-client/releases/download/v0.3.10/openrefine-client_0-3-10_linux
+        chmod +x client
+
+  example-doaj:
+    desc: Library Carpentry Lesson covering DOAJ # https://librarycarpentry.org/lc-open-refine/
+    dir: ./{{.TASK}}
+    vars:
+      PORT: 3334 # assign a different port for each project
+      RAM: 2048M # maximum RAM for OpenRefine java heap space
+    cmds:
+      - task: start # launch OpenRefine
+        vars: {DIR: '{{.TASK}}', PORT: '{{.PORT}}', RAM: '{{.RAM}}'}
+      - | # Download example data
+        wget --no-verbose --no-clobber https://github.com/felixlohmeier/openrefine-kimws2019/raw/master/doaj-article-sample.csv
+        wget --no-verbose --no-clobber https://github.com/felixlohmeier/openrefine-kimws2019/raw/master/doaj-openrefine.json
+      - > # import file
+        ../openrefine/client -P {{.PORT}}
+        --create doaj-article-sample.csv
+        --projectName {{.TASK}}
+      - > # apply transformation rules
+        ../openrefine/client -P {{.PORT}} {{.TASK}}
+        --apply doaj-openrefine.json
+      - > # export to file
+        ../openrefine/client -P {{.PORT}} {{.TASK}}
+        --output doaj-results.tsv
+      - task: stop # shut down OpenRefine
+        vars: {PORT: '{{.PORT}}'}
+    sources:
+      - doaj-article-sample.csv
+      - doaj-openrefine.json
+    generates:
+      - doaj-results.tsv
+    ignore_error: true # workaround to avoid an orphaned Java process on error https://github.com/go-task/task/issues/141
+
+  example-powerhouse:
+    desc: Powerhouse Museum Tutorial # https://programminghistorian.org/en/lessons/cleaning-data-with-openrefine
+    dir: ./{{.TASK}}
+    vars:
+      PORT: 3335 # assign a different port for each project
+      RAM: 2048M # maximum RAM for OpenRefine java heap space
+    cmds:
+      - task: start # launch OpenRefine
+        vars: {DIR: '{{.TASK}}', PORT: '{{.PORT}}', RAM: '{{.RAM}}'}
+      - | # Download example data
+        wget --no-verbose --no-clobber https://github.com/opencultureconsulting/openrefine-batch/raw/master/examples/powerhouse-museum/input/phm-collection.tsv
+        wget --no-verbose --no-clobber https://github.com/opencultureconsulting/openrefine-batch/raw/master/examples/powerhouse-museum/config/phm-transform.json
+      - > # import file
+        ../openrefine/client -P {{.PORT}}
+        --create phm-collection.tsv
+        --projectName {{.TASK}}
+      - > # apply transformation rules
+        ../openrefine/client -P {{.PORT}} {{.TASK}}
+        --apply phm-transform.json
+      - > # export to file
+        ../openrefine/client -P {{.PORT}} {{.TASK}}
+        --output phm-results.tsv
+      - task: stop # shut down OpenRefine
+        vars: {PORT: '{{.PORT}}'}
+    sources:
+      - phm-collection.tsv
+      - phm-transform.json
+    generates:
+      - phm-results.tsv
+    ignore_error: true # workaround to avoid an orphaned Java process on error https://github.com/go-task/task/issues/141
+
+  start:
+    dir: ./{{.DIR}}
+    cmds:
+      - rm -rf ./*.project* workspace.json # delete any temporary OpenRefine files
+      - > # launch OpenRefine with specific data directory and redirect its output to a log file
+        ../openrefine/refine -v warn -p {{.PORT}} -m {{.RAM}} -d ../{{.DIR}}
+        > openrefine.log 2>&1 &
+      - | # wait until OpenRefine API is available
+        timeout 30s bash -c "until
+          wget -q -O - http://localhost:{{.PORT}} | cat | grep -q -o OpenRefine
+          do sleep 1
+        done"
+    preconditions:
+      - sh: test -f ../openrefine/refine
+        msg: OpenRefine missing; try task install
+
+  stop:
+    cmds:
+      - kill -9 $(lsof -t -i:{{.PORT}}) # shut down OpenRefine immediately
+
+  check:
+    desc: check OpenRefine log for any warnings and exit on error
+    cmds:
+      - | # find log file(s) and check for "exception" or "error"
+        if grep -i 'exception\|error' $(find . -name openrefine.log); then
+          echo 1>&2 "log contains warnings!"; exit 1
+        fi
