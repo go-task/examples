@@ -1,6 +1,4 @@
 /.task/checksum
 /app
-/boxes/assets/ab0x.go
-/boxes/templates/ab0x.go
-/public/app.css
-/public/app.js
+/public/bundle.css
+/public/bundle.js

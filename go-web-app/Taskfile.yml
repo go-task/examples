@@ -5,8 +5,8 @@ version: '3'
 interval: 1s
 
 vars:
-  JS_BUNDLE: public/app.js
-  CSS_BUNDLE: public/app.css
+  JS_BUNDLE: public/bundle.js
+  CSS_BUNDLE: public/bundle.css
 
   EXE: app{{exeExt}}
 
@@ -27,13 +27,14 @@ tasks:
       - '**/*.go'
       - '{{.JS_BUNDLE}}'
       - '{{.CSS_BUNDLE}}'
+      - templates/**/*
     generates:
       - '{{.EXE}}'
 
   js:
     desc: Bundle JS using esbuild
     cmds:
-      - esbuild --bundle --minify assets/js/main.js > {{.JS_BUNDLE}}
+      - esbuild --bundle --minify assets/js/index.js > {{.JS_BUNDLE}}
     sources:
       - assets/js/**/*.js
     generates:
@@ -42,7 +43,7 @@ tasks:
   css:
     desc: Bundle CSS using esbuild
     cmds:
-      - esbuild --bundle --minify assets/css/main.css > {{.CSS_BUNDLE}}
+      - esbuild --bundle --minify assets/css/index.css > {{.CSS_BUNDLE}}
     sources:
       - assets/css/**/*.css
     generates:
