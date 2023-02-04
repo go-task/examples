@@ -1,80 +1,56 @@
+# https://taskfile.dev/
+
 version: '3'
 
+interval: 1s
+
 vars:
+  JS_BUNDLE: public/app.js
+  CSS_BUNDLE: public/app.css
+
   EXE: app{{exeExt}}
-
-  JS_FILES:
-    assets/js/vendor/jquery.js
-    assets/js/main.js
-
-  CSS_FILES:
-    assets/css/vendor/reboot.css
-    assets/css/main.css
 
 tasks:
   default:
-    cmds:
-      - task: run
-
-  run:
     desc: Build and run the web app
+    aliases: [run]
     cmds:
       - task: build
       - ./{{.EXE}}
 
   build:
     desc: Build the web app
-    deps: [assets, templates]
-    cmds:
-      - go build -v -o {{.EXE}} ./app.go
-
-  assets:
-    desc: Bundle assets and generate box for it
     deps: [js, css]
     cmds:
-      - fileb0x assets_box.yml
+      - go build -v -o {{.EXE}} ./app.go
     sources:
-      - public/**/*
+      - '**/*.go'
+      - '{{.JS_BUNDLE}}'
+      - '{{.CSS_BUNDLE}}'
     generates:
-      - boxes/assets/ab0x.go
-      - assets_box.yml
+      - '{{.EXE}}'
 
   js:
-    desc: Bundle JS
+    desc: Bundle JS using esbuild
     cmds:
-      - minify -o public/app.js {{.JS_FILES}}
+      - esbuild --bundle --minify assets/js/main.js > {{.JS_BUNDLE}}
     sources:
       - assets/js/**/*.js
     generates:
-      - public/app.js
+      - '{{.JS_BUNDLE}}'
 
   css:
-    desc: Bundle CSS
+    desc: Bundle CSS using esbuild
     cmds:
-      - minify -o public/app.css {{.CSS_FILES}}
+      - esbuild --bundle --minify assets/css/main.css > {{.CSS_BUNDLE}}
     sources:
       - assets/css/**/*.css
     generates:
-      - public/app.css
+      - '{{.CSS_BUNDLE}}'
 
-  templates:
-    desc: Generate box for HTML templates
+  clean:
+    desc: Clean every generated file
     cmds:
-      - fileb0x templates_box.yml
-    sources:
-      - templates/**/*
-      - templates_box.yml
-    generates:
-      - boxes/templates/ab0x.go
-
-  dl-deps:
-    desc: Install tools required to build this app
-    cmds:
-      - task: go-get
-        vars: {REPO: github.com/tdewolff/minify/cmd/minify}
-      - task: go-get
-        vars: {REPO: github.com/UnnoTed/fileb0x}
-
-  go-get:
-    cmds:
-      - go get -u {{.REPO}}
+      - rm -f {{.CSS_BUNDLE}}
+      - rm -f {{.JS_BUNDLE}}
+      - rm -f {{.EXE}}

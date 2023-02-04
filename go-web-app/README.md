@@ -20,4 +20,4 @@ How to use:
 - Open http://localhost:8383
 
 [go]: https://golang.org/
-[installtask]: https://github.com/go-task/task#installation
+[installtask]: https://taskfile.dev/installation/

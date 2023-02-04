@@ -1,3 +1,5 @@
+@import "./vendor/reboot.css";
+
 html, body {
   height: 100%;
 }

@@ -1,15 +1,19 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"net/http"
-
-	"github.com/go-task/examples/go-web-app/boxes/assets"
-	"github.com/go-task/examples/go-web-app/boxes/templates"
 )
 
+//go:embed public/*
+var publicDir embed.FS
+
+//go:embed templates/*
+var templatesDir embed.FS
+
 func main() {
-	http.Handle("/public/", withoutCache(assets.Handler))
+	http.Handle("/public/", withoutCache(http.FileServer(http.FS(publicDir))))
 	http.HandleFunc("/", indexPage)
 
 	fmt.Printf("Running web app on :8383")
@@ -19,7 +23,7 @@ func main() {
 }
 
 func indexPage(w http.ResponseWriter, r *http.Request) {
-	data, err := templates.ReadFile("templates/index.html")
+	data, err := templatesDir.ReadFile("templates/index.html")
 	if err != nil {
 		panic(err)
 	}
